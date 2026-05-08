@@ -843,46 +843,75 @@ drying:       0.3×0.4 + 0.1×0.6 = <span class="num">0.18</span>  <span class="
 <script>
 const slides = document.querySelectorAll('.slide');
 const TOTAL = slides.length;
+
 let cur = 0;
+
 const dotsEl = document.getElementById('dots');
 const counter = document.getElementById('counter');
 const btnPrev = document.getElementById('btnPrev');
 const btnNext = document.getElementById('btnNext');
 const scale = document.getElementById('presScale');
 
+// build dots
 slides.forEach((_, i) => {
   const d = document.createElement('div');
+
   d.className = 'nav-dot' + (i === 0 ? ' active' : '');
+
   d.onclick = () => goTo(i);
+
   dotsEl.appendChild(d);
 });
 
 function goTo(n) {
   slides[cur].classList.remove('active');
   dotsEl.children[cur].classList.remove('active');
+
   cur = Math.max(0, Math.min(TOTAL - 1, n));
+
   slides[cur].classList.add('active');
   dotsEl.children[cur].classList.add('active');
+
   counter.textContent = (cur + 1) + ' / ' + TOTAL;
+
   btnPrev.disabled = cur === 0;
   btnNext.disabled = cur === TOTAL - 1;
 }
-function go(d) { goTo(cur + d); }
+
+function go(d) {
+  goTo(cur + d);
+}
+
 document.addEventListener('keydown', e => {
-  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(1); }
-  if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+  if (e.key === 'ArrowRight' || e.key === ' ') {
+    e.preventDefault();
+    go(1);
+  }
+
+  if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    go(-1);
+  }
 });
+
+// responsive scale
 function rescale() {
-  const W = window.innerWidth, H = window.innerHeight;
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+
   const s = Math.min(W / 1280, H / 720);
+
   scale.style.transform = 'scale(' + s + ')';
+
   scale.style.width = '1280px';
   scale.style.height = '720px';
-  scale.style.position = 'absolute';
-  scale.style.left = ((W - 1280 * s) / 2) + 'px';
-  scale.style.top = ((H - 720 * s) / 2) + 'px';
+
+  // 핵심 수정
+  scale.style.position = 'relative';
 }
+
 window.addEventListener('resize', rescale);
+
 rescale();
 goTo(0);
 </script>
