@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>멀티 에이전트 기반 쇼핑 보조 서비스</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & ROOT ── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --ink:        #1a1a2e;
+  --ink-light:  #3d3d5c;
+  --paper:      #faf9f6;
+  --warm:       #f5f0e8;
+  --rule:       #d8d0c4;
+  --accent:     #c8523a;
+  --accent-l:   #e8846e;
+  --accent-p:   #fdf0ed;
+  --teal:       #2d7d6b;
+  --teal-p:     #e8f5f2;
+  --blue:       #2952a3;
+  --blue-p:     #edf2fc;
+  --gold:       #b8960c;
+  --green:      #2d9e7a;
+  --green-p:    #e8f5f0;
+  --purple:     #7c5cbf;
+  --purple-p:   #f0ecfb;
+  --orange:     #d4843a;
+  --orange-p:   #fef4ea;
+  --navy-rec:   #2e72b8;
+  --navy-p:     #eaf2fb;
+  --pink:       #c44a7e;
+  --pink-p:     #fceef3;
+  --serif: 'Noto Serif KR', Georgia, serif;
+  --sans:  'Noto Sans KR', sans-serif;
+  --mono:  'JetBrains Mono', monospace;
+  --slide-w: 1280px;
+  --slide-h: 720px;
+}
+
+/* ── PRESENTATION SHELL ── */
+html, body { width:100%; height:100%; background:#2a2a2a; overflow:hidden; }
+
+.pres {
+  position:relative;
+  width:100%; height:100%;
+  display:flex; align-items:center; justify-content:center;
+}
+
+/* ── SLIDE ── */
+.slide {
+  position:absolute;
+  width:var(--slide-w);
+  height:var(--slide-h);
+  background:var(--paper);
+  font-family:var(--sans);
+  color:var(--ink);
+  display:none;
+  flex-direction:column;
+  overflow:hidden;
+  border-radius:4px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);
+  transform-origin:center center;
+}
+.slide.active { display:flex; }
+
+/* ── SLIDE HEADER BAR ── */
+.s-header {
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:22px 48px 18px;
+  border-bottom:2px solid var(--rule);
+}
+.s-num {
+  font-family:var(--mono);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:0.12em;
+  background:var(--accent);
+  color:#fff;
+  padding:3px 9px;
+  border-radius:2px;
+  flex-shrink:0;
+}
+.s-title {
+  font-family:var(--serif);
+  font-size:20px;
+  font-weight:700;
+  letter-spacing:-0.02em;
+  color:var(--ink);
+}
+.s-sub {
+  margin-left:auto;
+  font-family:var(--mono);
+  font-size:10px;
+  color:var(--rule);
+  letter-spacing:0.1em;
+}
+
+/* ── SLIDE BODY ── */
+.s-body {
+  flex:1;
+  overflow:hidden;
+  padding:28px 48px 20px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+.s-body.row { flex-direction:row; gap:24px; }
+.s-body.center { align-items:center; justify-content:center; }
+
+/* ── SLIDE FOOTER ── */
+.s-footer {
+  flex-shrink:0;
+  height:36px;
+  background:var(--ink);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 48px;
+}
+.s-footer span {
+  font-family:var(--mono);
+  font-size:10px;
+  color:rgba(255,255,255,0.35);
+  letter-spacing:0.08em;
+}
+
+/* ── COVER SLIDE ── */
+.slide-cover {
+  background:var(--ink);
+  color:var(--paper);
+  position:relative;
+  overflow:hidden;
+}
+.slide-cover::before {
+  content:'';
+  position:absolute;
+  top:-80px; right:-80px;
+  width:500px; height:500px;
+  background:radial-gradient(circle, rgba(200,82,58,0.2) 0%, transparent 68%);
+  pointer-events:none;
+}
+.slide-cover::after {
+  content:'';
+  position:absolute;
+  bottom:-120px; left:-60px;
+  width:400px; height:400px;
+  background:radial-gradient(circle, rgba(45,125,107,0.15) 0%, transparent 68%);
+  pointer-events:none;
+}
+.cover-inner {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:0 80px;
+  position:relative;
+  z-index:1;
+}
+.cover-tag {
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  color:var(--accent-l);
+  margin-bottom:24px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.cover-tag::after {
+  content:'';
+  display:block;
+  width:48px; height:1px;
+  background:var(--accent-l);
+  opacity:0.5;
+}
+.cover h1 {
+  font-family:var(--serif);
+  font-size:42px;
+  font-weight:700;
+  line-height:1.25;
+  letter-spacing:-0.02em;
+  margin-bottom:12px;
+}
+.cover h1 em { font-style:normal; color:var(--accent-l); }
+.cover-desc {
+  font-size:15px;
+  color:rgba(250,249,246,0.55);
+  font-weight:300;
+  margin-bottom:44px;
+}
+.cover-meta {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:0;
+  border-top:1px solid rgba(255,255,255,0.1);
+  padding-top:28px;
+  max-width:560px;
+}
+.cover-meta-item { padding-right:24px; }
+.cover-meta-item label {
+  font-family:var(--mono);
+  font-size:9px;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,0.3);
+  display:block;
+  margin-bottom:4px;
+}
+.cover-meta-item span {
+  font-size:13px;
+  color:rgba(255,255,255,0.8);
+  font-weight:500;
+}
+
+/* ── TOC SLIDE ── */
+.toc-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px 40px;
+}
+.toc-item {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:10px 14px;
+  background:white;
+  border:1px solid var(--rule);
+  border-radius:6px;
+  cursor:default;
+}
+.toc-n {
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:700;
+  color:var(--accent);
+  min-width:28px;
+}
+.toc-t {
+  font-size:13px;
+  color:var(--ink-light);
+  font-weight:500;
+}
+
+/* ── GENERIC ELEMENTS ── */
+.label-tag {
+  display:inline-block;
+  font-family:var(--mono);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:0.08em;
+  padding:3px 10px;
+  border-radius:3px;
+  border:1.5px solid;
+}
+
+/* tables */
+.t { width:100%; border-collapse:collapse; font-size:12.5px; }
+.t thead tr { background:var(--ink); color:var(--paper); }
+.t thead th { padding:10px 14px; text-align:left; font-weight:600; font-size:11px; letter-spacing:0.04em; }
+.t tbody tr:nth-child(odd)  { background:white; }
+.t tbody tr:nth-child(even) { background:var(--warm); }
+.t tbody td { padding:9px 14px; border-bottom:1px solid var(--rule); color:var(--ink-light); vertical-align:top; font-size:12px; }
+.t tbody td:first-child { font-weight:600; color:var(--ink); }
+
+/* callout */
+.callout {
+  background:var(--teal-p);
+  border-left:4px solid var(--teal);
+  padding:12px 18px;
+  border-radius:0 6px 6px 0;
+  font-size:13px;
+  color:var(--ink);
+}
+.callout strong { color:var(--teal); }
+.callout.blue { background:var(--blue-p); border-color:var(--blue); }
+.callout.blue strong { color:var(--blue); }
+.callout.amber { background:#fef9e7; border-color:var(--gold); }
+
+/* pills / tags */
+.pill-row { display:flex; flex-wrap:wrap; gap:7px; }
+.pill {
+  background:var(--warm);
+  border:1px solid var(--rule);
+  padding:3px 12px;
+  border-radius:12px;
+  font-size:12px;
+  color:var(--ink-light);
+  font-family:var(--mono);
+}
+.tag { padding:3px 10px; border-radius:3px; font-size:12px; font-family:var(--mono); }
+.tag.pos { background:var(--teal-p); border:1px solid var(--teal); color:var(--teal); }
+.tag.neg { background:#fef2f2; border:1px solid #fca5a5; color:#dc2626; }
+.tag.warn { background:#fef9e7; border:1px solid #fcd34d; color:#92400e; }
+
+/* grid helpers */
+.g2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.g3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+.g4 { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+
+/* card */
+.card {
+  background:white;
+  border:1px solid var(--rule);
+  border-radius:7px;
+  padding:14px 16px;
+}
+.card h4 { font-size:12.5px; font-weight:700; margin-bottom:5px; color:var(--ink); }
+.card p  { font-size:12px; color:var(--ink-light); line-height:1.5; margin:0; }
+.card .tech {
+  display:inline-block;
+  font-family:var(--mono);
+  font-size:10px;
+  background:var(--warm);
+  border:1px solid var(--rule);
+  padding:2px 7px;
+  border-radius:3px;
+  color:var(--ink-light);
+  margin:4px 3px 0 0;
+}
+
+/* subsection title */
+.sub-title {
+  font-family:var(--serif);
+  font-size:14px;
+  font-weight:600;
+  padding-left:10px;
+  border-left:3px solid var(--accent);
+  margin-bottom:10px;
+  color:var(--ink);
+}
+
+/* code block */
+.code {
+  background:#1e1e2e;
+  color:#cdd6f4;
+  padding:14px 18px;
+  border-radius:6px;
+  font-family:var(--mono);
+  font-size:11.5px;
+  line-height:1.65;
+  overflow:auto;
+}
+.code .kw  { color:#cba6f7; }
+.code .str { color:#a6e3a1; }
+.code .num { color:#fab387; }
+.code .key { color:#89b4fa; }
+.code .cmt { color:#6c7086; font-style:italic; }
+
+/* flow steps (sequence overview) */
+.flow-list { display:flex; flex-direction:column; gap:0; position:relative; }
+.flow-list::before {
+  content:'';
+  position:absolute;
+  left:15px; top:32px; bottom:32px;
+  width:2px;
+  background:var(--rule);
+}
+.flow-item {
+  display:flex;
+  align-items:flex-start;
+  gap:14px;
+  padding:8px 0;
+  position:relative;
+  z-index:1;
+}
+.flow-badge {
+  width:32px; height:32px;
+  border-radius:50%;
+  background:var(--ink);
+  color:white;
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono);
+  font-size:10px;
+  font-weight:700;
+  flex-shrink:0;
+  border:3px solid var(--paper);
+  box-shadow:0 0 0 2px var(--ink);
+}
+.flow-badge.acc { background:var(--accent); box-shadow:0 0 0 2px var(--accent); }
+.flow-badge.teal { background:var(--teal); box-shadow:0 0 0 2px var(--teal); }
+.flow-content { padding-top:6px; }
+.flow-content h4 { font-size:13px; font-weight:700; margin-bottom:2px; }
+.flow-content p  { font-size:11.5px; color:var(--ink-light); margin:0; }
+
+/* vector bars */
+.vviz { display:grid; gap:5px; }
+.vrow { display:flex; align-items:center; gap:8px; }
+.vl   { font-family:var(--mono); font-size:10px; color:var(--ink-light); width:110px; flex-shrink:0; }
+.vbg  { flex:1; height:7px; background:#e8e4e0; border-radius:3px; overflow:hidden; }
+.vbar { height:100%; border-radius:3px; background:linear-gradient(90deg,var(--teal),var(--accent)); }
+.vv   { font-family:var(--mono); font-size:10px; font-weight:700; width:28px; text-align:right; }
+
+/* agent cards (3-col) */
+.agent-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.agent-card { border:1px solid var(--rule); border-radius:8px; overflow:hidden; }
+.agent-head { padding:12px 16px; font-weight:700; font-size:13px; display:flex; align-items:center; gap:8px; }
+.agent-head .badge { font-family:var(--mono); font-size:10px; padding:2px 8px; border-radius:10px; }
+.ac1 .agent-head { background:#1e1e2e; color:#cdd6f4; }
+.ac1 .badge { background:#cba6f7; color:#1e1e2e; }
+.ac2 .agent-head { background:#1e3040; color:#a6e3a1; }
+.ac2 .badge { background:#a6e3a1; color:#1e3040; }
+.ac3 .agent-head { background:#3d1a1a; color:#fab387; }
+.ac3 .badge { background:#fab387; color:#3d1a1a; }
+.agent-body { padding:14px 16px; }
+.io-label { font-family:var(--mono); font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--accent); display:block; margin-bottom:3px; }
+.agent-body p { font-size:12px; color:var(--ink-light); margin-bottom:8px; }
+
+/* hybrid grid */
+.hybrid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+.hybrid-card { background:white; border:1px solid var(--rule); border-radius:6px; padding:14px; }
+.hybrid-card h5 { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--accent); margin-bottom:7px; font-family:var(--mono); }
+.hybrid-card p  { font-size:12px; color:var(--ink-light); margin:0; line-height:1.5; }
+
+/* ── AGENT 3 FLOW (light theme) ── */
+.a3-flow { display:flex; flex-direction:column; gap:0; overflow:auto; }
+.a3-row  { display:grid; grid-template-columns:80px 1fr; gap:12px; align-items:start; }
+.a3-lbl  { display:flex; flex-direction:column; align-items:flex-end; gap:4px; padding-top:14px; }
+.a3-badge {
+  font-family:var(--mono); font-size:9px; font-weight:700;
+  letter-spacing:0.08em; padding:3px 8px; border-radius:3px;
+  border:1.5px solid; white-space:nowrap;
+}
+.a3-ldesc { font-size:10px; color:var(--ink-light); text-align:right; line-height:1.4; opacity:0.65; }
+.a3-block { border-radius:7px; padding:14px 16px; border:1.5px solid; }
+.a3-btitle {
+  font-size:10.5px; font-weight:700; letter-spacing:0.06em;
+  text-transform:uppercase; font-family:var(--mono);
+  margin-bottom:10px;
+  display:flex; align-items:center; gap:6px;
+}
+.a3-btitle::before {
+  content:''; display:inline-block;
+  width:5px; height:5px; border-radius:50%;
+  background:currentColor; flex-shrink:0;
+}
+.col-b  { background:#f0faf6; border-color:#2d9e7a; }
+.pro-b  { background:#f5f1fd; border-color:#7c5cbf; }
+.rag-b  { background:#fef7ee; border-color:#d4843a; }
+.rec-b  { background:#eef5fc; border-color:#2e72b8; }
+.out-b  { background:#fdf1f6; border-color:#c44a7e; }
+.a3-inner { display:grid; gap:8px; }
+.a3-g2 { grid-template-columns:1fr 1fr; }
+.a3-g3 { grid-template-columns:1fr 1fr 1fr; }
+.a3-g4 { grid-template-columns:repeat(4,1fr); }
+.a3-card { background:white; border:1px solid var(--rule); border-radius:5px; padding:10px 12px; }
+.a3-card h4 { font-size:11.5px; font-weight:700; margin-bottom:4px; color:var(--ink); }
+.a3-card p  { font-size:11px; color:var(--ink-light); margin:0; line-height:1.45; }
+.a3-tech { display:inline-block; font-family:var(--mono); font-size:9px; background:var(--warm); border:1px solid var(--rule); padding:2px 6px; border-radius:2px; color:var(--ink-light); margin:3px 2px 0 0; }
+.a3-pill { background:var(--warm); border:1px solid var(--rule); padding:2px 9px; border-radius:10px; font-size:11px; color:var(--ink-light); font-family:var(--mono); }
+.a3-pills { display:flex; flex-wrap:wrap; gap:5px; }
+.a3-arr { display:flex; justify-content:center; padding:5px 0; font-size:16px; color:var(--rule); }
+.a3-codesnip { background:#f8f7f4; border:1px solid #e0d8cc; border-radius:4px; padding:8px 12px; font-family:var(--mono); font-size:10px; line-height:1.6; color:#3d3550; overflow-x:auto; margin-top:6px; }
+.a3-codesnip .ck  { color:#2e72b8; }
+.a3-codesnip .ckw { color:#7c5cbf; }
+.a3-codesnip .cs  { color:#2d9e7a; }
+.a3-codesnip .cn  { color:#c44a7e; }
+.a3-codesnip .cmt { color:#999; font-style:italic; }
+.a3-vbg { flex:1; height:6px; background:#e8e4e0; border-radius:3px; overflow:hidden; }
+.a3-vbar { height:100%; border-radius:3px; }
+.a3-formula { background:var(--warm); border:1px solid var(--rule); border-radius:4px; padding:8px 14px; font-family:var(--mono); font-size:11px; color:var(--ink-light); text-align:center; margin-top:10px; }
+.a3-bubble { background:var(--warm); border:1px solid var(--rule); border-left:3px solid var(--navy-rec); border-radius:0 5px 5px 5px; padding:8px 12px; font-size:11px; color:var(--ink-light); font-style:italic; margin-top:6px; line-height:1.45; }
+.legend-row { display:flex; flex-wrap:wrap; gap:8px; padding:10px 14px; background:var(--warm); border:1px solid var(--rule); border-radius:6px; margin-bottom:16px; }
+.legend-row span { font-family:var(--mono); font-size:9.5px; color:var(--ink-light); }
+.legend-item { padding:2px 10px; border-radius:3px; font-size:11px; font-weight:600; border:1.5px solid; }
+
+/* ── NAV CONTROLS ── */
+.nav {
+  position:fixed;
+  bottom:28px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  align-items:center;
+  gap:12px;
+  background:rgba(20,20,30,0.88);
+  backdrop-filter:blur(8px);
+  padding:10px 20px;
+  border-radius:40px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.4);
+  z-index:9999;
+  user-select:none;
+}
+.nav-btn {
+  width:36px; height:36px;
+  border-radius:50%;
+  border:none;
+  background:rgba(255,255,255,0.1);
+  color:white;
+  font-size:16px;
+  cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:background 0.2s;
+}
+.nav-btn:hover  { background:rgba(255,255,255,0.22); }
+.nav-btn:disabled { opacity:0.25; cursor:default; }
+.nav-counter {
+  font-family:var(--mono);
+  font-size:11px;
+  color:rgba(255,255,255,0.6);
+  min-width:52px;
+  text-align:center;
+  letter-spacing:0.05em;
+}
+.nav-dots { display:flex; gap:5px; }
+.nav-dot {
+  width:6px; height:6px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.2);
+  cursor:pointer;
+  transition:all 0.2s;
+}
+.nav-dot.active { background:var(--accent-l); width:18px; border-radius:3px; }
+
+/* keyboard hint */
+.key-hint {
+  position:fixed;
+  bottom:80px;
+  left:50%;
+  transform:translateX(-50%);
+  font-family:var(--mono);
+  font-size:9.5px;
+  color:rgba(255,255,255,0.25);
+  letter-spacing:0.1em;
+  pointer-events:none;
+}
+
+/* responsive scale */
+.pres-scale {
+  transform-origin: center center;
+}
+
+/* ── FOOTNOTE ── */
+.fn { font-size:10.5px; color:rgba(61,61,92,0.5); font-style:italic; margin-top:6px; }
+</style>
+</head>
+<body>
+
+<div class="pres">
+<div class="pres-scale" id="presScale">
+
+<!-- ════════════════════════════════════
+  SLIDE 0 — COVER
+════════════════════════════════════ -->
+<div class="slide slide-cover active" id="slide-0">
+  <div class="cover-inner">
+    <div class="cover-tag">종합설계 프로젝트 보고서</div>
+    <h1 class="cover">멀티 에이전트 기반<br><em>쇼핑 보조 서비스</em></h1>
+    <p class="cover-desc">화장품 카테고리 중심 — AI 통합 가격·리뷰·성분 분석 시스템</p>
+    <div class="cover-meta">
+      <div class="cover-meta-item">
+        <label>카테고리</label><span>화장품 (Cosmetics)</span>
+      </div>
+      <div class="cover-meta-item">
+        <label>에이전트 구성</label><span>VLM · Gemini · 추천 모델</span>
+      </div>
+      <div class="cover-meta-item">
+        <label>작성일</label><span>2026. 05. 06</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+  SLIDE 1 — 목차
+════════════════════════════════════ -->
+<div class="slide" id="slide-1">
+  <div class="s-header">
+    <div class="s-title" style="font-size:22px;font-family:var(--serif);">목차 — Contents</div>
+    <span class="s-sub">AGENDA</span>
+  </div>
+  <div class="s-body" style="justify-content:center;">
+    <div class="toc-grid">
+      <div class="toc-item"><span class="toc-n">01</span><span class="toc-t">주제 설정 배경</span></div>
+      <div class="toc-item"><span class="toc-n">02</span><span class="toc-t">전체 시퀀스 개요</span></div>
+      <div class="toc-item"><span class="toc-n">03</span><span class="toc-t">Step 0 — 사용자 프로파일링</span></div>
+      <div class="toc-item"><span class="toc-n">04</span><span class="toc-t">Step 1–2 — 입력 및 Redis 캐시</span></div>
+      <div class="toc-item"><span class="toc-n">05</span><span class="toc-t">Agent 1 — 상품 정보 추출 (VLM)</span></div>
+      <div class="toc-item"><span class="toc-n">06</span><span class="toc-t">Agent 2 — 웹 기반 정보 수집</span></div>
+      <div class="toc-item"><span class="toc-n">07</span><span class="toc-t">Agent 3 — 개인화 추천 개요</span></div>
+      <div class="toc-item"><span class="toc-n">08</span><span class="toc-t">Agent 3 — 추천 시스템 플로우 (1)</span></div>
+      <div class="toc-item"><span class="toc-n">09</span><span class="toc-t">Agent 3 — 추천 시스템 플로우 (2)</span></div>
+      <div class="toc-item"><span class="toc-n">10</span><span class="toc-t">최종 응답 구성 · 에이전트 요약</span></div>
+      <div class="toc-item"><span class="toc-n">11</span><span class="toc-t">부가 기능 — 가격 트래킹</span></div>
+    </div>
+  </div>
+  <div class="s-footer"><span>멀티 에이전트 기반 쇼핑 보조 서비스</span><span>01 / 11</span></div>
+</div>
+
+<!-- ════════════════════════════════════
+  SLIDE 2 — 주제 설정 배경
+════════════════════════════════════ -->
+<div class="slide" id="slide-2">
+  <div class="s-header">
+    <span class="s-num">01</span>
+    <h2 class="s-title">주제 설정 배경</h2>
+    <span class="s-sub">BACKGROUND</span>
+  </div>
+  <div class="s-body row">
+    <!-- left col -->
+    <div style="flex:1;display:flex;flex-direction:column;gap:14px;">
+      <div class="sub-title">문제 인식</div>
+      <div style="display:flex;flex-direction:column;gap:7px;">
+        <div class="card" style="display:flex;gap:10px;align-items:flex-start;">
+          <span style="font-size:18px;flex-shrink:0;">💸</span>
+          <div><h4>복잡한 가격 조건</h4><p>플랫폼별 배송비·쿠폰·카드 할인 등 복합 조건 → 실제 최저가 산출 어려움</p></div>
+        </div>
+        <div class="card" style="display:flex;gap:10px;align-items:flex-start;">
+          <span style="font-size:18px;flex-shrink:0;">📦</span>
+          <div><h4>용량·구성 비교 어려움</h4><p>리필·세트·단품 혼재 → 단순 가격 비교로 가성비 판단 불가</p></div>
+        </div>
+        <div class="card" style="display:flex;gap:10px;align-items:flex-start;">
+          <span style="font-size:18px;flex-shrink:0;">🔍</span>
+          <div><h4>정보 탐색 비용 높음</h4><p>리뷰·성분·사용감 정보가 분산 → 소비자가 직접 여러 플랫폼 탐색 필요</p></div>
+        </div>
+      </div>
+    </div>
+    <!-- right col -->
+    <div style="flex:1;display:flex;flex-direction:column;gap:14px;">
+      <div class="sub-title">기존 서비스 한계 &amp; 서비스 정의</div>
+      <table class="t">
+        <thead><tr><th>한계</th><th>내용</th></tr></thead>
+        <tbody>
+          <tr><td>최저가 중심</td><td>배송비·쿠폰 미반영, 실제 결제금액과 괴리</td></tr>
+          <tr><td>개인화 부족</td><td>피부 타입 미반영, 모든 사용자 동일 추천</td></tr>
+          <tr><td>정보 분산</td><td>가격/리뷰/성분이 각 플랫폼에 분리 제공</td></tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        <strong>핵심 가치:</strong> NFC 태깅 또는 이미지 업로드 → AI가 가격·리뷰·성분 통합 분석 → <strong>실질 최저가 + 개인 맞춤 추천</strong> 제공
+      </div>
+      <div class="g3" style="gap:8px;">
+        <div style="background:#edf2fc;border:1px solid #b3c6f0;border-radius:6px;padding:10px;text-align:center;font-size:12px;color:#2952a3;font-weight:600;">📡 IoT<br><span style="font-weight:400;font-size:11px;">NFC 태깅</span></div>
+        <div style="background:#e8f5f2;border:1px solid #b0d8d0;border-radius:6px;padding:10px;text-align:center;font-size:12px;color:#2d7d6b;font-weight:600;">🔗 통합 분석<br><span style="font-weight:400;font-size:11px;">가격+리뷰+성분</span></div>
+        <div style="background:#fdf0ed;border:1px solid #f0c0b0;border-radius:6px;padding:10px;text-align:center;font-size:12px;color:#c8523a;font-weight:600;">🧠 개인화<br><span style="font-weight:400;font-size:11px;">피부 타입 기반</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="s-footer"><span>멀티 에이전트 기반 쇼핑 보조 서비스</span><span>02 / 11</span></div>
+</div>
+
+<!-- ════════════════════════════════════
+  SLIDE 3 — 전체 시퀀스 개요
+════════════════════════════════════ -->
+<div class="slide" id="slide-3">
+  <div class="s-header">
+    <span class="s-num">02</span>
+    <h2 class="s-title">전체 시퀀스 개요</h2>
+    <span class="s-sub">SYSTEM OVERVIEW</span>
+  </div>
+  <div class="s-body row" style="align-items:stretch;">
+    <div style="flex:1;">
+      <div class="flow-list">
+        <div class="flow-item">
+          <div class="flow-badge">S0</div>
+          <div class="flow-content"><h4>설문 기반 사용자 프로파일 생성</h4><p>Cold Start 방지 → [0,1] 벡터로 수치화 (퍼스널컬러·피부타입·소비성향 등)</p></div>
+        </div>
+        <div class="flow-item">
+          <div class="flow-badge">S1</div>
+          <div class="flow-content"><h4>사용자 입력</h4><p>NFC 태깅 / 이미지 업로드 / 텍스트 입력</p></div>
+        </div>
+        <div class="flow-item">
+          <div class="flow-badge">S2</div>
+          <div class="flow-content"><h4>Redis 캐시 조회</h4><p>HIT → 즉시 반환 &nbsp;|&nbsp; MISS → Agent 파이프라인 실행</p></div>
+        </div>
+        <div class="flow-item">
+          <div class="flow-badge acc">A1</div>
+          <div class="flow-content"><h4>Agent 1 (VLM) — 상품 정보 추출</h4><p>이미지·NFC URL → 구조화된 상품 JSON 반환</p></div>
+        </div>
+        <div class="flow-item">
+          <div class="flow-badge acc">A2</div>
+          <div class="flow-content"><h4>Agent 2 (Gemini) — 웹 정보 수집</h4><p>가격(올리브영·쿠팡·네이버) + 리뷰·성분(화해) + 상품 벡터 생성</p></div>
+        </div>
+        <div class="flow-item">
+          <div class="flow-badge teal">A3</div>
+          <div class="flow-content"><h4>Agent 3 — 개인화 추천</h4><p>Hybrid 추천 (협업 필터링 + 콘텐츠 기반 + RAG) + 사용자 벡터 업데이트</p></div>
+        </div>
+        <div class="flow-item">
+          <div class="flow-badge">S6</div>
+          <div class="flow-content"><h4>최종 응답 → Frontend</h4><p>상품 요약 + 실질 최저가 + 리뷰·성분 요약 + 추천 + 대체 상품</p></div>
+        </div>
+      </div>
+    </div>
+    <div style="width:240px;display:flex;flex-direction:column;gap:10px;">
+      <div class="sub-title" style="font-size:12px;">핵심 특징</div>
+      <div class="card" style="background:#fdf0ed;border-color:#e8846e;"><h4 style="color:#c8523a;">Redis 캐시</h4><p>동일 상품 재요청 시 Agent 파이프라인 생략 → 응답 속도 최적화</p></div>
+      <div class="card" style="background:#e8f5f2;border-color:#2d7d6b;"><h4 style="color:#2d7d6b;">DB 재사용</h4><p>Agent 2 수집 결과 저장 → 동일 상품 조회 시 재활용</p></div>
+      <div class="card" style="background:#edf2fc;border-color:#2952a3;"><h4 style="color:#2952a3;">가격 트래킹</h4><p>1일 1회 또는 6시간 간격으로 가격 변동 추적 및 알림</p></div>
+    </div>
+  </div>
+  <div class="s-footer"><span>멀티 에이전트 기반 쇼핑 보조 서비스</span><span>03 / 11</span></div>
+</div>
+
+<!-- ════════════════════════════════════
+  SLIDE 4 — 사용자 프로파일링 + 입력·캐시
+════════════════════════════════════ -->
+<div class="slide" id="slide-4">
+  <div class="s-header">
+    <span class="s-num">03–04</span>
+    <h2 class="s-title">사용자 프로파일링 · 입력 및 Redis 캐시</h2>
+    <span class="s-sub">PROFILING · INPUT · CACHE</span>
+  </div>
+  <div class="s-body row">
+    <!-- left: profiling -->
+    <div style="flex:1.2;display:flex;flex-direction:column;gap:12px;">
+      <div class="sub-title">Step 0 — 설문 기반 사용자 벡터</div>
+      <p style="font-size:12px;color:var(--ink-light);margin:0;">최초 가입 시 설문 → [0, 1] 연속 벡터로 수치화 → Cold Start 방지</p>
+      <table class="t" style="font-size:11.5px;">
+        <thead><tr><th>항목</th><th>0 ↔ 1</th></tr></thead>
+        <tbody>
+          <tr><td>퍼스널컬러</td><td>웜(0) ↔ 쿨(1)</td></tr>
+          <tr><td>피부 타입</td><td>지성(0) ↔ 건성(1)</td></tr>
+          <tr><td>민감성 여부</td><td>민감(0) ↔ 무던(1)</td></tr>
+          <tr><td>메이크업 선호</td><td>화려함(0) ↔ 자연스러움(1)</td></tr>
+          <tr><td>소비 성향</td><td>가성비(0) ↔ 프리미엄(1)</td></tr>
+        </tbody>
+      </table>
+      <div class="g3" style="gap:8px;">
+        <div class="hybrid-card"><h5>장기 취향</h5><p>설문 벡터 → SQL DB 저장. 협업 필터링에서 코사인 유사도로 활용.</p></div>
+        <div class="hybrid-card"><h5>단기 취향</h5><p>클릭·검색·체류 등 행동 로그를 세션 단위 집계.</p></div>
+        <div class="hybrid-card"><h5>RAG 저장</h5><p>Session Context 임베딩 후 Vector DB 저장. 추천 시 장기+단기 결합.</p></div>
+      </div>
+    </div>
+    <!-- right: input + cache -->
+    <div style="flex:1;display:flex;flex-direction:column;gap:12px;">
+      <div class="sub-title">Step 1 — 입력 방식</div>
+      <div style="display:flex;flex-direction:column;gap:7px;">
+        <div class="card" style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:20px;">📡</span>
+          <div><h4>NFC 태깅</h4><p>태그 인식 → URL query parameter 자동 전달</p></div>
+        </div>
+        <div class="card" style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:20px;">📷</span>
+          <div><h4>이미지 업로드</h4><p>직접 촬영 또는 캡처본 → VLM 분석</p></div>
+        </div>
+        <div class="card" style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:20px;">⌨️</span>
+          <div><h4>텍스트 입력</h4><p>상품명 / 브랜드명 직접 입력</p></div>
+        </div>
+      </div>
+      <div class="sub-title" style="margin-top:4px;">Step 2 — Redis 캐시 전략</div>
+      <div class="callout blue" style="font-size:12px;">
+        <strong>캐시 키:</strong> 상품명 + 브랜드 + 옵션 조합<br>
+        <strong>HIT</strong> → 즉시 반환 (Agent 파이프라인 생략) &nbsp;|&nbsp; <strong>MISS</strong> → 전체 실행
+      </div>
+    </div>
+  </div>
+  <div class="s-footer"><span>멀티 에이전트 기반 쇼핑 보조 서비스</span><span>04 / 11</span></div>
+</div>
+
+<!-- ════════════════════════════════════
+  SLIDE 5 — Agent 1 VLM
+════════════════════════════════════ -->
+<div class="slide" id="slide-5">
+  <div class="s-header">
+    <span class="s-num">05</span>
+    <h2 class="s-title">Agent 1 (VLM) — 상품 정보 추출</h2>
+    <span class="s-sub">PRODUCT EXTRACTION</span>
+  </div>
+  <div class="s-body row">
+    <div style="flex:1.3;display:flex;flex-direction:column;gap:12px;">
+      <div class="sub-title">추출 항목</div>
+      <table class="t" style="font-size:11.5px;">
+        <thead><tr><th>필드</th><th>설명</th><th>예시</th></tr></thead>
+        <tbody>
+          <tr><td>productName</td><td>상품명</td><td>실키 스테이 24H 롱웨어 파운데이션</td></tr>
+          <tr><td>brand</td><td>브랜드 (영문 대문자)</td><td>HERA</td></tr>
+          <tr><td>category.main</td><td>대분류</td><td>base_makeup / skincare / lip_makeup</td></tr>
+          <tr><td>category.sub</td><td>소분류</td><td>liquid_foundation / cushion / toner</td></tr>
+          <tr><td>attributes.shade</td><td>색상/호수</td><td>null (없을 경우)</td></tr>
+          <tr><td>attributes.type</td><td>구성 유형</td><td>단품 / 리필 / 세트</td></tr>
+          <tr><td>attributes.volume</td><td>용량 + 단위</td><td>30 / g</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:12px;">
+      <div class="sub-title">출력 예시 — JSON</div>
+      <div class="code" style="flex:1;">
+{<br>
+&nbsp;&nbsp;<span class="key">"productName"</span>: <span class="str">"실키 스테이 24H 롱웨어"</span>,<br>
+&nbsp;&nbsp;<span class="key">"brand"</span>: <span class="str">"HERA"</span>,<br>
+&nbsp;&nbsp;<span class="key">"category"</span>: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"main"</span>: <span class="str">"base_makeup"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"sub"</span>: <span class="str">"liquid_foundation"</span><br>
+&nbsp;&nbsp;},<br>
+&nbsp;&nbsp;<span class="key">"attributes"</span>: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"shade"</span>: <span class="kw">null</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"type"</span>: <span class="str">"단품"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"volume"</span>: <span class="num">30</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"unit"</span>: <span class="str">"g"</span><br>
+&nbsp;&nbsp;}<br>
+}
+      </div>
+      <div class="callout" style="font-size:12px;">
+        <strong>입력 소스:</strong> 이미지 / NFC URL / 텍스트 → VLM이 구조화 JSON으로 변환하여 Agent 2로 전달
+      </div>
+    </div>
+  </div>
+  <div class="s-footer"><span>멀티 에이전트 기반 쇼핑 보조 서비스</span><span>05 / 11</span></div>
+</div>
+
+<!-- ════════════════════════════════════
+  SLIDE 6 — Agent 2 Gemini
+════════════════════════════════════ -->
+<div class="slide" id="slide-6">
+  <div class="s-header">
+    <span class="s-num">06</span>
+    <h2 class="s-title">Agent 2 (Gemini) — 웹 기반 정보 수집</h2>
+    <span class="s-sub">WEB DATA COLLECTION</span>
+  </div>
+  <div class="s-body row">
+    <div style="flex:1;display:flex;flex-direction:column;gap:10px;">
+      <div class="sub-title">수집 범위 · 가격 계산</div>
+      <table class="t" style="font-size:11px;">
+        <thead><tr><th>종류</th><th>플랫폼</th><th>항목</th></tr></thead>
+        <tbody>
+          <tr><td>가격</td><td>올리브영·쿠팡·네이버</td><td>판매가·배송비·할인·쿠폰·구성·ml당가</td></tr>
+          <tr><td>리뷰</td><td>올리브영·화해</td><td>긍정/부정 키워드, 사용감 요약</td></tr>
+          <tr><td>성분</td><td>화해</td><td>주요·주의 성분, 피부 적합성</td></tr>
+        </tbody>
+      </table>
+      <div class="code" style="font-size:11.5px;padding:10px 14px;">final_price = price + shipping_fee - discount - coupon</div>
+      <div class="sub-title" style="margin-top:4px;">가격 비교 예시 — HERA 실키 스테이</div>
+      <table class="t" style="font-size:11px;">
+        <thead><tr><th>플랫폼</th><th>판매가</th><th>할인+쿠폰</th><th>최종가</th><th>ml당</th></tr></thead>
+        <tbody>
+          <tr><td>OLIVE YOUNG ★</td><td>63,000</td><td>14,560원</td><td><strong style="color:#c8523a;">55,440원</strong></td><td>1,848원</td></tr>
+          <tr><td>NAVER SHOPPING</td><td>59,810</td><td>0원</td><td>62,810원</td><td>2,093원</td></tr>
+        </tbody>
+      </table>
+      <p class="fn">★ 장바구니 쿠폰 20% 적용 시. 증정품 포함으로 가성비 우수.</p>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:10px;">
+      <div class="sub-title">리뷰·성분 요약 · Feature 벡터</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">
+        <span class="tag pos">얇고 가볍게 밀착</span>
+        <span class="tag pos">지속력 우수</span>
+        <span class="tag pos">모공·요철 커버력</span>
+        <span class="tag neg">건성 피부 속건조</span>
+        <span class="tag neg">블렌딩 어려움</span>
+        <span class="tag warn">향료 (민감성 주의)</span>
+        <span class="tag pos">히알루론산</span>
+        <span class="tag pos">나이아신아마이드</span>
+      </div>
+      <div class="sub-title" style="margin-top:4px;">Feature 벡터 (베이스 메이크업)</div>
+      <div style="background:white;border:1px solid var(--rule);border-radius:6px;padding:14px 16px;">
+        <div class="vviz">
+          <div class="vrow"><span class="vl">long_lasting</span><div class="vbg"><div class="vbar" style="width:90%"></div></div><span class="vv">0.9</span></div>
+          <div class="vrow"><span class="vl">matte</span><div class="vbg"><div class="vbar" style="width:80%"></div></div><span class="vv">0.8</span></div>
+          <div class="vrow"><span class="vl">lightweight</span><div class="vbg"><div class="vbar" style="width:90%"></div></div><span class="vv">0.9</span></div>
+          <div class="vrow"><span class="vl">coverage_high</span><div class="vbg"><div class="vbar" style="width:70%"></div></div><span class="vv">0.7</span></div>
+          <div class="vrow"><span class="vl">glow</span><div class="vbg"><div class="vbar" style="width:30%"></div></div><span class="vv">0.3</span></div>
+          <div class="vrow"><span class="vl">drying</span><div class="vbg"><div class="vbar" style="width:40%"></div></div><span class="vv">0.4</span></div>
+          <div class="vrow"><span class="vl">cakey</span><div class="vbg"><div class="vbar" style="width:20%"></div></div><span class="vv">0.2</span></div>
+        </div>
+      </div>
+      <div class="callout amber" style="font-size:11.5px;padding:10px 14px;">
+        <strong>DB 재사용:</strong> 수집 결과 저장 → 동일 상품 재요청 시 캐시/DB 조회로 재활용
+      </div>
+    </div>
+  </div>
+  <div class="s-footer"><span>멀티 에이전트 기반 쇼핑 보조 서비스</span><span>06 / 11</span></div>
+</div>
+
+<!-- ════════════════════════════════════
+  SLIDE 7 — Agent 3 개요
+════════════════════════════════════ -->
+<div class="slide" id="slide-7">
+  <div class="s-header">
+    <span class="s-num">07</span>
+    <h2 class="s-title">Agent 3 — 개인화 추천 (Hybrid Architecture)</h2>
+    <span class="s-sub">RECOMMENDATION ENGINE</span>
+  </div>
+  <div class="s-body" style="gap:16px;">
+    <div class="hybrid">
+      <div class="hybrid-card" style="background:#edf2fc;border-color:#b3c6f0;">
+        <h5 style="color:#2952a3;">① 협업 필터링</h5>
+        <p>사용자-상품 행동 매트릭스 기반. 유사 사용자가 선호한 상품 후보 Top-N 추출.<br><span style="font-family:var(--mono);font-size:10px;color:#666;">click 0.1 / dwell 0.2 / cart 0.5 / purchase 1.0</span></p>
+      </div>
+      <div class="hybrid-card" style="background:#e8f5f2;border-color:#b0d8d0;">
+        <h5 style="color:#2d7d6b;">② 콘텐츠 기반 필터링</h5>
+        <p>사용자 벡터 ↔ 상품 벡터 간 코사인 유사도 계산. 개인화 추천의 핵심 로직.</p>
+      </div>
+      <div class="hybrid-card" style="background:#fef4ea;border-color:#f0c090;">
+        <h5 style="color:#8a4d12;">③ 구매 사유 RAG</h5>
+        <p>구매 사유 텍스트 임베딩 → Vector DB 저장 → 유사 사유 검색 → LLM이 feature 벡터 변환하여 선호 보정.</p>
+      </div>
+    </div>
+    <div class="g2" style="gap:16px;">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="sub-title">최종 사용자 벡터 공식</div>
+        <div class="code" style="font-size:11px;padding:12px 16px;">
+<span class="cmt"># 암묵적(행동) × 0.4 + 명시적(RAG) × 0.6</span><br>
+final_vec[f] = existing[f] * <span class="num">0.4</span> + rag[f] * <span class="num">0.6</span><br><br>
+<span class="cmt"># 예시</span><br>
+long_lasting: 0.7×0.4 + 0.9×0.6 = <span class="num">0.82</span><br>
+drying:       0.3×0.4 + 0.1×0.6 = <span class="num">0.18</span>  <span class="cmt">↓ 건조함 회피 강화</span>
+        </div>
+        <div class="callout" style="font-size:12px;">
+          <strong>Cold Start 시:</strong> 협업 필터링 생략 → RAG + 콘텐츠 기반으로 보완
+        </div>
+      </div>
+      <div>
+        <div class="sub-title">RAG 결합 이유</div>
+        <table class="t" style="font-size:11px;">
+          <thead><tr><th>이유</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr><td>암묵+명시 결합</td><td>무엇을 선택했는지 + 왜 선택했는지 동시 반영</td></tr>
+            <tr><td>정확도 향상</td><td>건조함·트러블 등 회피 feature 정밀 반영</td></tr>
+            <tr><td>Cold Start 완화</td><td>소량 텍스트만으로 초기 추천 품질 보완</td></tr>
+            <tr><td>설명 가능성</td><td>"지속력이 중요한 사용자" 등 추천 근거 제시</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="s-footer"><span>멀티 에이전트 기반 쇼핑 보조 서비스</span><span>07 / 11</span></div>
+</div>
+
+<!-- ════════════════════════════════════
+  SLIDE 8 — Agent 3 플로우 (1)
+════════════════════════════════════ -->
+<div class="slide" id="slide-8">
+  <div class="s-header">
+    <span class="s-num" style="background:var(--teal);">08</span>
+    <h2 class="s-title">Agent 3 — 추천 시스템 플로우 (1) : 데이터 준비</h2>
+    <span class="s-sub">FLOW — DATA PREP</span>
+  </div>
+  <div class="s-body" style="gap:8px;overflow:hidden;">
+    <div class="legend-row">
+      <span>범례:</span>
+      <span class="legend-item" style="background:#e8f5f0;border-color:#2d9e7a;color:#1a6b52;">데이터 수집</span>
+      <span class="legend-item" style="background:#f0ecfb;border-color:#7c5cbf;color:#4a2d8a;">LLM 처리 / 임베딩</span>
+      <span class="legend-item" style="background:#fef4ea;border-color:#d4843a;color:#8a4d12;">Vector DB / RAG</span>
+      <span class="legend-item" style="background:#eaf2fb;border-color:#2e72b8;color:#1a4a80;">추천 파이프라인</span>
+      <span class="legend-item" style="background:#fceef3;border-color:#c44a7e;color:#7a1a45;">최종 출력</span>
+    </div>
+    <div class="a3-flow" style="gap:0;">
+
+      <div class="a3-row">
+        <div class="a3-lbl">
+          <span class="a3-badge" style="background:#e8f5f0;border-color:#2d9e7a;color:#1a6b52;">Phase 1</span>
+          <span class="a3-ldesc">데이터 수집</span>
+        </div>
+        <div class="a3-block col-b">
+          <div class="a3-btitle" style="color:#1a6b52;">사용자 행동 데이터 및 구매 사유 수집</div>
+          <div class="a3-inner a3-g2">
+            <div>
+              <p style="font-size:10.5px;color:var(--ink-light);margin-bottom:6px;">행동 로그 (가중치)</p>
+              <div class="a3-pills">
+                <span class="a3-pill">click <b style="color:#2d9e7a;">×0.1</b></span>
+                <span class="a3-pill">dwell <b style="color:#2d9e7a;">×0.2</b></span>
+                <span class="a3-pill">cart <b style="color:#2d9e7a;">×0.5</b></span>
+                <span class="a3-pill">purchase <b style="color:#2d9e7a;">×1.0</b></span>
+              </div>
+            </div>
+            <div>
+              <p style="font-size:10.5px;color:var(--ink-light);margin-bottom:6px;">텍스트 데이터</p>
+              <div class="a3-pills">
+                <span class="a3-pill" style="border-color:#2d9e7a;color:#1a6b52;background:#d6f0e8;">구매 사유 텍스트</span>
+                <span class="a3-pill" style="border-color:#2d9e7a;color:#1a6b52;background:#d6f0e8;">session context</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="a3-arr">↓</div>
+
+      <div class="a3-row">
+        <div class="a3-lbl">
+          <span class="a3-badge" style="background:#f0ecfb;border-color:#7c5cbf;color:#4a2d8a;">Phase 2</span>
+          <span class="a3-ldesc">LLM 전처리</span>
+        </div>
+        <div class="a3-block pro-b">
+          <div class="a3-btitle" style="color:#4a2d8a;">텍스트 요약 및 전처리 — Gemini / GPT</div>
+          <div class="a3-inner a3-g3">
+            <div class="a3-card"><h4>리뷰 요약</h4><p>반복 키워드 추출 및 긍/부정 요약</p><span class="a3-tech">LLM</span></div>
+            <div class="a3-card"><h4>구매 사유 요약</h4><p>"건조하지 않고 지속력이 좋아서" → <span style="color:#7c5cbf;font-weight:600;">"지속력 중요" · "건조함 회피"</span></p><span class="a3-tech">LLM</span></div>
+            <div class="a3-card"><h4>Session 행동 요약</h4><p>클릭·검색·체류 집계 → 현재 관심 feature 추출</p><span class="a3-tech">LLM</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="a3-arr">↓</div>
+
+      <div class="a3-row">
+        <div class="a3-lbl">
+          <span class="a3-badge" style="background:#fef4ea;border-color:#d4843a;color:#8a4d12;">Phase 3</span>
+          <span class="a3-ldesc">임베딩 &amp; DB</span>
+        </div>
+        <div class="a3-block rag-b">
+          <div class="a3-btitle" style="color:#8a4d12;">임베딩 생성 &amp; Vector DB 저장</div>
+          <div class="a3-inner a3-g2">
+            <div class="a3-card">
+              <h4>Embedding Model</h4>
+              <span class="a3-tech">OpenAI text-embedding-3-small</span>
+              <div class="a3-pills" style="margin-top:6px;">
+                <span class="a3-pill">구매 사유</span><span class="a3-pill">리뷰 summary</span><span class="a3-pill">session context</span>
+              </div>
+            </div>
+            <div class="a3-card">
+              <h4>Vector DB 저장</h4>
+              <span class="a3-tech">PostgreSQL + pgvector</span>
+              <span class="a3-tech">ChromaDB</span>
+              <div class="a3-codesnip">
+{ <span class="ck">"user_id"</span>: <span class="cs">"u123"</span>, <span class="ck">"category"</span>: <span class="cs">"base_makeup"</span>,<br>
+&nbsp;&nbsp;<span class="ck">"reason_text"</span>: <span class="cs">"지속력 중요"</span>, <span class="ck">"embedding"</span>: [...] }
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <div class="s-footer"><span>멀티 에이전트 기반 쇼핑 보조 서비스</span><span>08 / 11</span></div>
+</div>
+
+<!-- ════════════════════════════════════
+  SLIDE 9 — Agent 3 플로우 (2)
+════════════════════════════════════ -->
+<div class="slide" id="slide-9">
+  <div class="s-header">
+    <span class="s-num" style="background:var(--teal);">09</span>
+    <h2 class="s-title">Agent 3 — 추천 시스템 플로우 (2) : 추천 실행</h2>
+    <span class="s-sub">FLOW — RECOMMENDATION</span>
+  </div>
+  <div class="s-body" style="gap:7px;overflow:hidden;">
+    <div class="a3-flow">
+
+      <div class="a3-row">
+        <div class="a3-lbl"><span class="a3-badge" style="background:#eaf2fb;border-color:#2e72b8;color:#1a4a80;">Step 1</span><span class="a3-ldesc">후보 생성</span></div>
+        <div class="a3-block rec-b">
+          <div class="a3-btitle" style="color:#1a4a80;">협업 필터링 — 후보 상품 Top-N 추출</div>
+          <div class="a3-inner a3-g2">
+            <div class="a3-card">
+              <h4>사용자-상품 행동 매트릭스</h4>
+              <div class="a3-codesnip" style="font-size:10px;">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;헤라파운 &nbsp;라네즈 &nbsp;롬앤틴트<br>
+user_001 &nbsp;&nbsp;<span class="cn">1.0</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cn">0.5</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="cn">0.0</span><br>
+<span style="color:#2e72b8;font-weight:700;">나(u123) &nbsp;&nbsp;?&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;?&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;?</span>
+              </div>
+            </div>
+            <div class="a3-card">
+              <h4>코사인 유사도 → 유사 사용자 탐색</h4>
+              <span class="a3-tech">PostgreSQL</span><span class="a3-tech">scikit-learn</span>
+              <div style="margin-top:6px;padding:8px;background:#f0f6ff;border-radius:5px;font-size:11px;color:#1a4a80;border:1px solid #c5dbf5;">출력: 후보 상품 30~50개</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="a3-arr">↓</div>
+
+      <div class="a3-row">
+        <div class="a3-lbl"><span class="a3-badge" style="background:#fef4ea;border-color:#d4843a;color:#8a4d12;">Step 2</span><span class="a3-ldesc">RAG Retrieval</span></div>
+        <div class="a3-block rag-b">
+          <div class="a3-btitle" style="color:#8a4d12;">RAG Retrieval (LlamaIndex / LangChain) — 동일 카테고리 + embedding similarity</div>
+          <div class="a3-inner a3-g3">
+            <div class="a3-card"><h4>과거 구매 사유</h4><p>"지속력이 좋아서" (0.92)</p></div>
+            <div class="a3-card"><h4>session context</h4><p>최근 탐색 경향 반영</p></div>
+            <div class="a3-card"><h4>리뷰 summary</h4><p>유사 선호 리뷰 검색</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="a3-arr">↓</div>
+
+      <div class="a3-row">
+        <div class="a3-lbl"><span class="a3-badge" style="background:#f0ecfb;border-color:#7c5cbf;color:#4a2d8a;">Step 3–4</span><span class="a3-ldesc">선호 추출 &amp; 벡터</span></div>
+        <div class="a3-block pro-b">
+          <div class="a3-btitle" style="color:#4a2d8a;">사용자 선호 추출 + 최종 벡터 = existing × 0.4 + rag × 0.6</div>
+          <div class="a3-inner a3-g2">
+            <div class="a3-card">
+              <div style="display:grid;gap:4px;">
+                <div class="vrow"><span class="a3-ldesc" style="width:90px;">long_lasting</span><div class="a3-vbg"><div class="a3-vbar" style="width:90%;background:linear-gradient(90deg,#2d9e7a,#5abf98);"></div></div><b style="font-family:var(--mono);font-size:10px;color:#2d9e7a;">0.82</b></div>
+                <div class="vrow"><span class="a3-ldesc" style="width:90px;">drying</span><div class="a3-vbg"><div class="a3-vbar" style="width:18%;background:linear-gradient(90deg,#c44a7e,#e87aaa);"></div></div><b style="font-family:var(--mono);font-size:10px;color:#c44a7e;">0.18↓</b></div>
+                <div class="vrow"><span class="a3-ldesc" style="width:90px;">coverage_high</span><div class="a3-vbg"><div class="a3-vbar" style="width:66%;background:linear-gradient(90deg,#2e72b8,#5a9ae0);"></div></div><b style="font-family:var(--mono);font-size:10px;color:#2e72b8;">0.66</b></div>
+                <div class="vrow"><span class="a3-ldesc" style="width:90px;">matte</span><div class="a3-vbg"><div class="a3-vbar" style="width:70%;background:linear-gradient(90deg,#7c5cbf,#aa8de8);"></div></div><b style="font-family:var(--mono);font-size:10px;color:#7c5cbf;">0.70</b></div>
+              </div>
+            </div>
+            <div class="a3-card">
+              <span class="a3-tech">numpy</span><span class="a3-tech">cosine similarity</span>
+              <div class="a3-codesnip" style="margin-top:6px;">
+score = <span class="ckw">cosine_similarity</span>(user_vec, prod_vec)<br>
+top5 = <span class="ckw">sorted</span>(scores)[-<span class="cn">5</span>:]
+              </div>
+              <div class="a3-bubble">"최근 지속력과 유분 컨트롤 중심의 매트 제품 탐색 경향이 반영되었습니다."</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="a3-arr">↓</div>
+
+      <div class="a3-row">
+        <div class="a3-lbl"><span class="a3-badge" style="background:#fceef3;border-color:#c44a7e;color:#7a1a45;">Output</span><span class="a3-ldesc">최종 출력</span></div>
+        <div class="a3-block out-b">
+          <div class="a3-btitle" style="color:#7a1a45;">Agent 3 최종 출력 → Step 6 (Frontend) + 사용자 벡터 업데이트</div>
+          <div class="a3-inner a3-g4">
+            <div class="a3-card" style="text-align:center;"><div style="font-size:18px;">🏆</div><h4 style="color:#c44a7e;font-size:11px;">추천 순위</h4><p>Top-K 상품 리스트</p></div>
+            <div class="a3-card" style="text-align:center;"><div style="font-size:18px;">✨</div><h4 style="color:#c44a7e;font-size:11px;">개인화 결과</h4><p>추천 이유 포함</p></div>
+            <div class="a3-card" style="text-align:center;"><div style="font-size:18px;">🔄</div><h4 style="color:#c44a7e;font-size:11px;">대체 상품</h4><p>유사 특성 상품</p></div>
+            <div class="a3-card" style="text-align:center;"><div style="font-size:18px;">📈</div><h4 style="color:#2d9e7a;font-size:11px;">벡터 업데이트</h4><p>행동·구매·사유 반영</p></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <div class="s-footer"><span>멀티 에이전트 기반 쇼핑 보조 서비스</span><span>09 / 11</span></div>
+</div>
+
+<!-- ════════════════════════════════════
+  SLIDE 10 — 최종 응답 · 에이전트 요약
+════════════════════════════════════ -->
+<div class="slide" id="slide-10">
+  <div class="s-header">
+    <span class="s-num">10</span>
+    <h2 class="s-title">최종 응답 구성 · 에이전트 역할 요약</h2>
+    <span class="s-sub">RESPONSE · AGENT SUMMARY</span>
+  </div>
+  <div class="s-body" style="gap:16px;">
+    <div class="sub-title">Step 6 — 최종 응답 구성</div>
+    <div class="g3" style="gap:10px;">
+      <div class="card"><h4>📋 상품 정보 요약</h4><p>상품명, 브랜드, 카테고리, 주요 특징 한 줄 요약</p></div>
+      <div class="card"><h4>💰 실질 최저가 비교</h4><p>배송비·할인·쿠폰 반영한 플랫폼별 실질 가격</p></div>
+      <div class="card"><h4>⭐ 리뷰·성분 요약</h4><p>긍/부정 키워드, 주의 성분, 피부 적합성</p></div>
+      <div class="card"><h4>🎯 개인화 추천 결과</h4><p>사용자 성향 기반 추천 여부 및 이유</p></div>
+      <div class="card"><h4>🔄 대체 상품 리스트</h4><p>유사 특성 / 유사 사용자가 관심 갖는 상품</p></div>
+      <div class="callout" style="font-size:12px;"><strong>설명 가능한 추천:</strong> 단순 결과가 아닌 "왜 이 제품을 추천하는지" LLM이 자연어 근거 생성</div>
+    </div>
+    <div class="sub-title">에이전트 역할 요약</div>
+    <div class="agent-grid">
+      <div class="agent-card ac1">
+        <div class="agent-head"><span>Agent 1</span><span class="badge">VLM</span></div>
+        <div class="agent-body">
+          <span class="io-label">Input</span><p>이미지 / NFC URL / 텍스트</p>
+          <span class="io-label">Output</span><p>구조화된 상품 JSON</p>
+        </div>
+      </div>
+      <div class="agent-card ac2">
+        <div class="agent-head"><span>Agent 2</span><span class="badge">Gemini</span></div>
+        <div class="agent-body">
+          <span class="io-label">Input</span><p>상품 JSON (Agent 1 출력)</p>
+          <span class="io-label">Output</span><p>가격 + 리뷰/성분 요약 + 상품 벡터</p>
+        </div>
+      </div>
+      <div class="agent-card ac3">
+        <div class="agent-head"><span>Agent 3</span><span class="badge">추천 모델</span></div>
+        <div class="agent-body">
+          <span class="io-label">Input</span><p>상품 벡터 + 사용자 벡터 + 행동 데이터</p>
+          <span class="io-label">Output</span><p>추천 순위 + 개인화 결과 + 대체 상품</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="s-footer"><span>멀티 에이전트 기반 쇼핑 보조 서비스</span><span>10 / 11</span></div>
+</div>
+
+<!-- ════════════════════════════════════
+  SLIDE 11 — 가격 트래킹
+════════════════════════════════════ -->
+<div class="slide" id="slide-11">
+  <div class="s-header">
+    <span class="s-num">11</span>
+    <h2 class="s-title">부가 기능 — 가격 트래킹</h2>
+    <span class="s-sub">PRICE TRACKING</span>
+  </div>
+  <div class="s-body" style="justify-content:center;gap:20px;">
+    <div class="callout amber" style="font-size:13px;">
+      <strong>수집 주기:</strong> 1일 1회 또는 6시간 간격 &nbsp;|&nbsp; <strong>방식:</strong> 크롤링 대신 Gemini 기반 웹 검색 활용 → 판매가·배송비·할인·쿠폰·구성 수집
+    </div>
+    <div class="g2" style="gap:20px;">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="sub-title">사용자 기능</div>
+        <div class="card" style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;">🔖</span><div><h4>관심 상품 등록</h4><p>가격 추적을 원하는 상품 저장</p></div></div>
+        <div class="card" style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;">🎯</span><div><h4>목표 가격 설정</h4><p>사용자 지정 목표가 도달 시 알림</p></div></div>
+        <div class="card" style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;">📈</span><div><h4>가격 변동 그래프</h4><p>누적 데이터 기반 가격 추이 시각화</p></div></div>
+        <div class="card" style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;">🔔</span><div><h4>최저가 갱신 알림</h4><p>역대 최저가 경신 시 푸시 알림</p></div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="sub-title">전체 서비스 요약</div>
+        <div style="background:var(--ink);border-radius:10px;padding:24px;color:white;flex:1;display:flex;flex-direction:column;gap:14px;">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--accent-l);letter-spacing:0.15em;text-transform:uppercase;">System Architecture</div>
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px;">
+            <div style="display:flex;gap:10px;align-items:center;"><span style="background:var(--accent);color:white;padding:2px 8px;border-radius:2px;font-family:var(--mono);font-size:10px;flex-shrink:0;">IoT</span><span style="color:rgba(255,255,255,0.75);">NFC 태그 → 자동 상품 식별</span></div>
+            <div style="display:flex;gap:10px;align-items:center;"><span style="background:#6f42c1;color:white;padding:2px 8px;border-radius:2px;font-family:var(--mono);font-size:10px;flex-shrink:0;">VLM</span><span style="color:rgba(255,255,255,0.75);">이미지 → 구조화 JSON</span></div>
+            <div style="display:flex;gap:10px;align-items:center;"><span style="background:#1a7a5e;color:white;padding:2px 8px;border-radius:2px;font-family:var(--mono);font-size:10px;flex-shrink:0;">Gemini</span><span style="color:rgba(255,255,255,0.75);">웹 탐색 → 가격·리뷰·성분·벡터</span></div>
+            <div style="display:flex;gap:10px;align-items:center;"><span style="background:#2952a3;color:white;padding:2px 8px;border-radius:2px;font-family:var(--mono);font-size:10px;flex-shrink:0;">Hybrid</span><span style="color:rgba(255,255,255,0.75);">협업 필터링 + 콘텐츠 기반 + RAG</span></div>
+            <div style="display:flex;gap:10px;align-items:center;"><span style="background:#9a4a1a;color:white;padding:2px 8px;border-radius:2px;font-family:var(--mono);font-size:10px;flex-shrink:0;">Redis</span><span style="color:rgba(255,255,255,0.75);">캐시 HIT → 즉시 반환</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="s-footer"><span>멀티 에이전트 기반 쇼핑 보조 서비스</span><span>11 / 11</span></div>
+</div>
+
+</div><!-- /pres-scale -->
+</div><!-- /pres -->
+
+<!-- NAV -->
+<div class="nav" id="nav">
+  <button class="nav-btn" id="btnPrev" onclick="go(-1)" disabled>&#8592;</button>
+  <div class="nav-dots" id="dots"></div>
+  <span class="nav-counter" id="counter">1 / 12</span>
+  <button class="nav-btn" id="btnNext" onclick="go(1)">&#8594;</button>
+</div>
+<div class="key-hint">← → 방향키 또는 Space로 넘기기</div>
+
+<script>
+const TOTAL = 12; // 0~11
+let cur = 0;
+
+const slides = document.querySelectorAll('.slide');
+const dotsEl = document.getElementById('dots');
+const counter = document.getElementById('counter');
+const btnPrev = document.getElementById('btnPrev');
+const btnNext = document.getElementById('btnNext');
+const scale  = document.getElementById('presScale');
+
+// build dots
+slides.forEach((_, i) => {
+  const d = document.createElement('div');
+  d.className = 'nav-dot' + (i === 0 ? ' active' : '');
+  d.onclick = () => goTo(i);
+  dotsEl.appendChild(d);
+});
+
+function goTo(n) {
+  slides[cur].classList.remove('active');
+  dotsEl.children[cur].classList.remove('active');
+  cur = Math.max(0, Math.min(TOTAL - 1, n));
+  slides[cur].classList.add('active');
+  dotsEl.children[cur].classList.add('active');
+  counter.textContent = `${cur + 1} / ${TOTAL}`;
+  btnPrev.disabled = cur === 0;
+  btnNext.disabled = cur === TOTAL - 1;
+}
+
+function go(d) { goTo(cur + d); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ')  { e.preventDefault(); go(1); }
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); go(-1); }
+});
+
+// responsive scale
+function rescale() {
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const s = Math.min(W / 1280, H / 720);
+  scale.style.transform = `scale(${s})`;
+  scale.style.width  = '1280px';
+  scale.style.height = '720px';
+  scale.style.position = 'absolute';
+  scale.style.left = ((W - 1280 * s) / 2) + 'px';
+  scale.style.top  = ((H - 720  * s) / 2) + 'px';
+}
+window.addEventListener('resize', rescale);
+rescale();
+goTo(0);
+</script>
+</body>
+</html>
